@@ -1,2 +1,0 @@
-# Hartford_Capstone
-test
