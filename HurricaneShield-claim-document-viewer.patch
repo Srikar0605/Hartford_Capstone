@@ -1,0 +1,228 @@
+diff --git a/src/app/core/constants/api-routes.ts b/src/app/core/constants/api-routes.ts
+index e044196..8302d72 100644
+--- a/src/app/core/constants/api-routes.ts
++++ b/src/app/core/constants/api-routes.ts
+@@ -94,6 +94,8 @@ export const API_ROUTES = {
+     byId: (claimId: string) => `${CLAIMS}/${claimId}`,
+     timeline: (claimId: string) => `${CLAIMS}/${claimId}/timeline`,
+     documents: (claimId: string) => `${CLAIMS}/${claimId}/documents`,
++    documentContent: (claimId: string, documentId: string) =>
++      `${CLAIMS}/${claimId}/documents/${documentId}`,
+     verifyDocument: (claimId: string, documentId: string) =>
+       `${CLAIMS}/${claimId}/documents/${documentId}/verify`,
+     startReview: (claimId: string) => `${CLAIMS}/${claimId}/review`,
+diff --git a/src/app/features/claims/claim.service.ts b/src/app/features/claims/claim.service.ts
+index 0d1445d..10326ac 100644
+--- a/src/app/features/claims/claim.service.ts
++++ b/src/app/features/claims/claim.service.ts
+@@ -90,6 +90,16 @@ export class ClaimService {
+       .pipe(map((response) => response.data));
+   }
+ 
++  /**
++   * Downloads the file behind an uploaded claim document.
++   * It goes through HttpClient (not a plain link) so the auth interceptor attaches the access token.
++   */
++  downloadDocument(claimId: string, documentId: string): Observable<Blob> {
++    return this.http.get(apiUrl(API_ROUTES.claims.documentContent(claimId, documentId)), {
++      responseType: 'blob',
++    });
++  }
++
+   verifyDocument(
+     claimId: string,
+     documentId: string,
+diff --git a/src/app/features/claims/pages/claim-connected-page.component.html b/src/app/features/claims/pages/claim-connected-page.component.html
+index 3187c4c..2f1897d 100644
+--- a/src/app/features/claims/pages/claim-connected-page.component.html
++++ b/src/app/features/claims/pages/claim-connected-page.component.html
+@@ -996,7 +996,18 @@
+                       </p>
+                     </div>
+ 
+-                    <app-status-badge [status]="doc.verificationStatus" />
++                    <div class="flex shrink-0 items-center gap-3">
++                      <app-status-badge [status]="doc.verificationStatus" />
++                      <button
++                        type="button"
++                        class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-bold text-brand-900 transition hover:border-brand-600 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:ring-offset-2"
++                        [attr.aria-label]="'View ' + doc.fileName"
++                        (click)="viewDocument(doc)"
++                      >
++                        <app-icon name="eye" class="size-4" />
++                        View
++                      </button>
++                    </div>
+                   </div>
+ 
+                   @if (doc.verificationNotes) {
+@@ -1484,4 +1495,67 @@
+       </aside>
+     </div>
+   }
++  <!-- Document preview -->
++  <app-slide-over
++    [open]="!!previewDocument()"
++    [title]="previewDocument()?.fileName ?? 'Document'"
++    [subtitle]="previewDocument()?.documentType"
++    eyebrow="Claim document"
++    (closed)="closeDocumentPreview()"
++  >
++    @if (previewDocument(); as d) {
++      <div class="space-y-4">
++        @if (previewLoading()) {
++          <div class="grid h-72 place-items-center rounded-2xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-500" role="status">
++            Loading document…
++          </div>
++        } @else if (previewError()) {
++          <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800" role="alert">
++            {{ previewError() }}
++          </div>
++        } @else if (previewUrl()) {
++          @switch (previewKind()) {
++            @case ('image') {
++              <img [src]="previewUrl()" [alt]="d.fileName" class="max-h-[70vh] w-full rounded-2xl border border-slate-200 bg-slate-50 object-contain" />
++            }
++            @case ('pdf') {
++              <iframe [src]="previewResourceUrl()" [title]="d.fileName" class="h-[70vh] w-full rounded-2xl border border-slate-200 bg-white"></iframe>
++            }
++            @default {
++              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
++                A preview isn't available for this file type. Download it to open it on your device.
++              </div>
++            }
++          }
++        }
++
++        <dl class="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
++          <div>
++            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Uploaded</dt>
++            <dd class="mt-1 font-semibold text-brand-950">{{ d.uploadedAt | date: 'd MMM y, h:mm a' }}</dd>
++          </div>
++          <div>
++            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Size</dt>
++            <dd class="mt-1 font-semibold text-brand-950">{{ d.fileSize / 1024 | number: '1.0-0' }} KB</dd>
++          </div>
++          <div class="col-span-2">
++            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Verification</dt>
++            <dd class="mt-1"><app-status-badge [status]="d.verificationStatus" /></dd>
++          </div>
++        </dl>
++      </div>
++    }
++    <div slideOverFooter class="flex justify-end gap-2">
++      <button type="button" class="hs-btn hs-btn-secondary" (click)="closeDocumentPreview()">Close</button>
++      <button
++        type="button"
++        class="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-900 px-5 font-bold text-white transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50"
++        [disabled]="!previewUrl()"
++        (click)="saveDocument()"
++      >
++        <app-icon name="download" class="size-4" />
++        Download
++      </button>
++    </div>
++  </app-slide-over>
+ </ng-template>
+diff --git a/src/app/features/claims/pages/claim-connected-page.component.ts b/src/app/features/claims/pages/claim-connected-page.component.ts
+index 4235442..5fb817c 100644
+--- a/src/app/features/claims/pages/claim-connected-page.component.ts
++++ b/src/app/features/claims/pages/claim-connected-page.component.ts
+@@ -1,5 +1,5 @@
+ 
+-import { CommonModule } from '@angular/common';
++import { CommonModule, DOCUMENT } from '@angular/common';
+ import {
+   ChangeDetectionStrategy,
+   Component,
+@@ -12,6 +12,7 @@ import {
+   viewChild,
+ } from '@angular/core';
+ import { ReactiveFormsModule } from '@angular/forms';
++import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
+ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+ import { forkJoin, Subject, takeUntil } from 'rxjs';
+ 
+@@ -206,6 +207,7 @@ export class ClaimConnectedPageComponent implements OnInit, OnDestroy, HasUnsave
+     });
+   }
+   ngOnDestroy(): void {
++    this.closeDocumentPreview();
+     this.destroy$.next();
+     this.destroy$.complete();
+   }
+@@ -589,6 +591,74 @@ export class ClaimConnectedPageComponent implements OnInit, OnDestroy, HasUnsave
+     this.informationForm.controls.claimRowVersion.setValue(rowVersion);
+     this.verificationForm.controls.claimRowVersion.setValue(rowVersion);
+   }
++  // ------------------------------------------------------------------ document preview
++  private readonly sanitizer = inject(DomSanitizer);
++  private readonly doc = inject(DOCUMENT);
++  /** Document currently open in the preview panel. */
++  readonly previewDocument = signal<ClaimDocumentResponse | null>(null);
++  /** Object URL of the downloaded file; revoked when the panel closes. */
++  readonly previewUrl = signal<string | null>(null);
++  readonly previewLoading = signal(false);
++  readonly previewError = signal<string | null>(null);
++  /** PDFs render in an iframe, which needs an explicitly trusted resource URL. */
++  readonly previewResourceUrl = computed<SafeResourceUrl | null>(() => {
++    const url = this.previewUrl();
++    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
++  });
++  readonly previewKind = computed<'image' | 'pdf' | 'other' | null>(() => {
++    const type = (this.previewDocument()?.contentType ?? '').toLowerCase();
++    if (!this.previewDocument()) return null;
++    if (type.startsWith('image/')) return 'image';
++    if (type === 'application/pdf') return 'pdf';
++    return 'other';
++  });
++
++  /** Fetches an uploaded document with the user's token and opens it in the preview panel. */
++  viewDocument(document: ClaimDocumentResponse): void {
++    this.closeDocumentPreview();
++    this.previewDocument.set(document);
++    this.previewLoading.set(true);
++    this.claimsService
++      .downloadDocument(document.claimId, document.documentId)
++      .pipe(takeUntil(this.destroy$))
++      .subscribe({
++        next: (blob) => {
++          // Re-type the blob with the stored content type so the browser renders it inline.
++          const typed = new Blob([blob], { type: document.contentType || blob.type });
++          this.previewUrl.set(URL.createObjectURL(typed));
++          this.previewLoading.set(false);
++        },
++        error: (error: unknown) => {
++          this.previewLoading.set(false);
++          this.previewError.set(
++            error instanceof ApiClientError
++              ? error.message
++              : 'The document could not be loaded. Try again in a moment.',
++          );
++        },
++      });
++  }
++
++  /** Saves the open document to the user's device under its original file name. */
++  saveDocument(): void {
++    const url = this.previewUrl();
++    const document = this.previewDocument();
++    if (!url || !document) return;
++    const link = this.doc.createElement('a');
++    link.href = url;
++    link.download = document.fileName;
++    link.click();
++  }
++
++  closeDocumentPreview(): void {
++    const url = this.previewUrl();
++    if (url) URL.revokeObjectURL(url);
++    this.previewUrl.set(null);
++    this.previewDocument.set(null);
++    this.previewLoading.set(false);
++    this.previewError.set(null);
++  }
++
+   private fail(error: unknown): void {
+     this.busy.set(false);
+     const message =
