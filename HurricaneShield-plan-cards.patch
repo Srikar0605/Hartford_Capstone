@@ -1,0 +1,80 @@
+diff --git a/src/app/features/Landing/landing-page.component.ts b/src/app/features/Landing/landing-page.component.ts
+index 0531f4c..19403fc 100644
+--- a/src/app/features/Landing/landing-page.component.ts
++++ b/src/app/features/Landing/landing-page.component.ts
+@@ -42,7 +42,7 @@ export class LandingPageComponent {
+ 
+   /** Example claim history shown in the activity panel (illustrative). */
+   readonly claimLog = [
+-    { time: '19 Oct 21:40', text: 'Claim CLM-8812 submitted · Wind & Cyclone', done: true },
++    { time: '19 Oct 21:40', text: 'Claim CLM-8812 submitted · Dwelling Protection', done: true },
+     { time: '19 Oct 21:46', text: '3 photos and a repair estimate uploaded', done: true },
+     { time: '20 Oct 10:12', text: 'Documents verified by Claims Manager', done: true },
+     { time: '20 Oct 10:15', text: 'Claim moved to review', done: true },
+diff --git a/src/app/features/public/pages/public-connected-page.component.html b/src/app/features/public/pages/public-connected-page.component.html
+index 23836d2..ee070ee 100644
+--- a/src/app/features/public/pages/public-connected-page.component.html
++++ b/src/app/features/public/pages/public-connected-page.component.html
+@@ -210,11 +210,11 @@
+                 @switch (i) {
+                   @case (0) {
+                     <div class="grid grid-cols-3 gap-2.5">
+-                      @for (t of ['Essential', 'Plus', 'Complete']; track t; let j = $index) {
++                      @for (t of ['Premier', 'Plus', 'Essential']; track t; let j = $index) {
+                         <div class="rounded-xl border p-3" [class]="j === 1 ? 'border-brand-800 bg-brand-50/50' : 'border-brand-950/8'">
+-                          <p class="cr-mono text-slate-400">{{ ['Basic', 'Standard', 'Max'][j] }}</p>
++                          <p class="cr-mono text-slate-400">{{ ['Best', 'Better', 'Good'][j] }}</p>
+                           <p class="mt-1 text-sm font-extrabold text-brand-950">{{ t }}</p>
+-                          <div class="mt-3 h-1.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand-800" [style.width.%]="[48, 68, 100][j]"></div></div>
++                          <div class="mt-3 h-1.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand-800" [style.width.%]="[100, 68, 48][j]"></div></div>
+                         </div>
+                       }
+                     </div>
+diff --git a/src/app/shared/components/product-preview/product-preview.component.ts b/src/app/shared/components/product-preview/product-preview.component.ts
+index b3f4f79..52911db 100644
+--- a/src/app/shared/components/product-preview/product-preview.component.ts
++++ b/src/app/shared/components/product-preview/product-preview.component.ts
+@@ -36,7 +36,7 @@ import { IconComponent } from '../icon/icon.component';
+                 <p class="cr-mono text-slate-400">{{ tier.label }}</p>
+                 <p class="mt-1 font-extrabold tracking-tight text-brand-950">{{ tier.name }}</p>
+                 <p class="mt-3 text-2xl font-extrabold tracking-tight text-brand-950">{{ tier.price }}</p>
+-                <p class="text-[0.7rem] text-slate-500">per year · example</p>
++                <p class="text-[0.7rem] text-slate-500">base premium · per year</p>
+                 <span class="mt-4 block rounded-lg py-1.5 text-center text-[0.7rem] font-bold" [class]="i === 1 ? 'bg-brand-900 text-white' : 'bg-slate-100 text-slate-700'">{{ i === 1 ? 'Selected' : 'Choose' }}</span>
+               </div>
+             }
+@@ -54,7 +54,7 @@ import { IconComponent } from '../icon/icon.component';
+           } @else {
+             <div class="relative overflow-hidden rounded-xl bg-brand-900 p-5 text-white sm:col-span-2">
+               <p class="font-mono text-[0.68rem] text-brand-200">HS-POL-20418 · ACTIVE</p>
+-              <p class="mt-1.5 text-2xl font-extrabold tracking-tight">Coastal Plus</p>
++              <p class="mt-1.5 text-2xl font-extrabold tracking-tight">HurricaneShield Plus</p>
+               <div class="mt-4 flex gap-6 text-[0.75rem] text-brand-200">
+                 <span>Term <b class="text-white">62%</b></span><span>Risk <b class="text-white">Medium</b></span><span>Version <b class="text-white">v3</b></span>
+               </div>
+@@ -106,9 +106,9 @@ export class ProductPreviewComponent {
+     { label: 'Properties', icon: 'house' as const },
+   ];
+   readonly claims = [
+-    { id: 'CLM-8812', coverage: 'Wind & Cyclone', date: '19 Oct', status: 'Under review', tone: 'bg-violet-50 text-violet-800' },
+-    { id: 'CLM-8790', coverage: 'Storm Surge', date: '30 Sep', status: 'Approved', tone: 'bg-emerald-50 text-emerald-800' },
+-    { id: 'CLM-8751', coverage: 'Temporary Living', date: '02 Sep', status: 'Closed', tone: 'bg-slate-100 text-slate-700' },
++    { id: 'CLM-8812', coverage: 'Dwelling Protection', date: '19 Oct', status: 'Under review', tone: 'bg-violet-50 text-violet-800' },
++    { id: 'CLM-8790', coverage: 'Water Intrusion Protection', date: '30 Sep', status: 'Approved', tone: 'bg-emerald-50 text-emerald-800' },
++    { id: 'CLM-8751', coverage: 'Emergency Living Expenses', date: '02 Sep', status: 'Closed', tone: 'bg-slate-100 text-slate-700' },
+   ];
+   readonly stats = [
+     { label: 'Next premium', value: '14 Mar 2027', icon: 'calendar' as const },
+@@ -116,9 +116,9 @@ export class ProductPreviewComponent {
+     { label: 'Documents', value: '3 verified', icon: 'file-check' as const },
+   ];
+   readonly tiers = [
+-    { label: 'Basic', name: 'Essential', price: '₹13,850' },
+-    { label: 'Standard', name: 'Plus', price: '₹19,900' },
+-    { label: 'Comprehensive', name: 'Complete', price: '₹28,350' },
++    { label: 'Best', name: 'Premier', price: '₹2,400' },
++    { label: 'Better', name: 'Plus', price: '₹1,450' },
++    { label: 'Good', name: 'Essential', price: '₹850' },
+   ];
+   readonly factors = [
+     { name: 'Risk zone', value: '+18', width: 72, up: true },
